@@ -136,6 +136,7 @@
 
   <div class="toolbar">
     <button class="btn primary" id="btnSettings">⚙︎ Dropbox</button>
+    <button class="btn" id="btnPDF">⎙ Plan PDF</button>
     <button class="btn" id="btnExport">⤓ Sauvegarde manuelle</button>
     <button class="btn" id="btnImport">⤒ Importer</button>
     <input type="file" id="fileInput" accept="application/json,.json" class="hidden">
@@ -149,6 +150,7 @@
     <div class="seg" id="modeSeg">
       <button data-mode="espece" class="on">Espèce</button>
       <button data-mode="usage">Usage</button>
+      <button data-mode="annee">Année</button>
       <button data-mode="statut">Statut</button>
       <button data-mode="alertes">Alertes</button>
     </div>
@@ -202,6 +204,7 @@ const STATUTS=["Vivant","À surveiller","À remplacer","Remplacé","Mort"];
 const STATUT_COLOR={"Vivant":"--leaf","À surveiller":"--watch","À remplacer":"--replace","Remplacé":"--dead","Mort":"--dead"};
 const USAGES=["Table","À jus","Table et jus"];
 const USAGE_COLOR={"Table":"#C44536","À jus":"#C9883A","Table et jus":"#6B8E3D","Non défini":"#B8B0A2"};
+const YEAR_PALETTE=["#3F6B3A","#C9883A","#8A6FB0","#2E6E8A","#B23A2E","#6B8E3D","#9A7C1E","#5A7D9A","#B07AA0","#8E8678","#4E7C59","#C25E3A"];
 const EVENT_TYPES=["Plantation","Remplacement","Maladie / Chancre","Taille","Taille sévère","Blessure","Bris de branche","Traitement","Floraison","Récolte","Observation"];
 const TYPE_COLOR={"Plantation":"#3F6B3A","Remplacement":"#8A6FB0","Maladie / Chancre":"#B23A2E","Taille":"#6B6457","Taille sévère":"#8a4b00","Blessure":"#C06000","Bris de branche":"#9A3B2E","Traitement":"#2E6E8A","Floraison":"#B07AA0","Récolte":"#9A7C1E","Observation":"#6B6457"};
 
@@ -263,7 +266,8 @@ const DBX={
 
 /* ===================== État ===================== */
 const LS_KEY="verger_plan_v1";
-let state=null,currentId=null,mode="espece",syncTimer=null;
+let state=null,currentId=null,mode="espece",syncTimer=null,curYearMap={};
+function yearMap(){const ys=Array.from(new Set(Object.values(state.trees).map(t=>(t.anneePlantation||"").trim()||"?"))).sort();const m={};ys.forEach((y,i)=>m[y]=YEAR_PALETTE[i%YEAR_PALETTE.length]);return m;}
 
 function buildVarietes(){
   const v={};
@@ -333,6 +337,7 @@ async function initRemote(){
 function cellColor(t){
   if(mode==="espece") return espOf(t.variete)==="Poirier"?{bg:"var(--pear)",bd:"var(--pear)",flag:false}:{bg:"var(--apple)",bd:"var(--apple)",flag:false};
   if(mode==="usage"){const c=USAGE_COLOR[usageOf(t.variete)]||USAGE_COLOR["Non défini"];return {bg:c,bd:c,flag:false};}
+  if(mode==="annee"){const c=curYearMap[(t.anneePlantation||"").trim()||"?"]||"#B8B0A2";return {bg:c,bd:c,flag:false};}
   if(mode==="statut"){const c="var("+(STATUT_COLOR[t.statut]||"--leaf")+")";return {bg:c,bd:c,flag:false};}
   if(t.statut==="À surveiller")return{bg:"var(--watch)",bd:"var(--watch)",flag:true};
   if(t.statut==="À remplacer")return{bg:"var(--replace)",bd:"var(--replace)",flag:true};
@@ -340,6 +345,7 @@ function cellColor(t){
   return {bg:"#CFE0CB",bd:"#cfe0cb",flag:false};
 }
 function renderGrid(){
+  curYearMap=yearMap();
   const tbl=document.getElementById("grid");
   let h="<thead><tr><th class='corner'></th>";
   for(let c=1;c<=20;c++)h+="<th>"+c+"</th>";
@@ -362,6 +368,7 @@ function renderLegend(){
   const L=document.getElementById("legend");
   if(mode==="espece")L.innerHTML="<span><i style='background:var(--apple)'></i>Pommier</span><span><i style='background:var(--pear)'></i>Poirier</span>";
   else if(mode==="usage")L.innerHTML=USAGES.map(u=>"<span><i style='background:"+USAGE_COLOR[u]+"'></i>"+u+"</span>").join("");
+  else if(mode==="annee")L.innerHTML=Object.keys(curYearMap).sort().map(y=>"<span><i style='background:"+curYearMap[y]+"'></i>"+esc(y==="?"?"Inconnue":y)+"</span>").join("");
   else if(mode==="statut")L.innerHTML=STATUTS.map(s=>"<span><i style='background:var("+STATUT_COLOR[s]+")'></i>"+s+"</span>").join("");
   else L.innerHTML="<span><i style='background:var(--watch)'></i>À surveiller</span><span><i style='background:var(--replace)'></i>À remplacer</span><span><i style='background:var(--dead)'></i>Mort / remplacé</span><span><i style='background:#CFE0CB'></i>Sain</span>";
 }
@@ -528,6 +535,62 @@ function openSettings(){
 function closeSettings(){document.getElementById("scrim2").classList.remove("open");document.getElementById("sheet2").classList.remove("open");}
 
 /* ===================== Sauvegarde manuelle ===================== */
+function exportPDF(){
+  const espTint={"Poirier":"#F1E9CF","Pommier":"#F5E3DE"};
+  const espBar={"Poirier":"#9A7C1E","Pommier":"#B23A2E"};
+  const useTag={"Table":["T","#C44536"],"À jus":["J","#C9883A"],"Table et jus":["M","#6B8E3D"],"Non défini":["?","#B8B0A2"]};
+  // Carte
+  let map="<table class='pmap'><thead><tr><th></th>";
+  for(let c=1;c<=20;c++)map+="<th>"+c+"</th>";
+  map+="</tr></thead><tbody>";
+  RANGS.forEach(r=>{
+    map+="<tr><th>"+r+"</th>";
+    for(let c=1;c<=20;c++){
+      const t=state.trees[r+c];
+      if(!t){map+="<td class='e'></td>";continue;}
+      const esp=espOf(t.variete),u=usageOf(t.variete),ut=useTag[u]||useTag["Non défini"];
+      map+="<td style='background:"+(espTint[esp]||"#eee")+";border-top:2px solid "+(espBar[esp]||"#999")+"'>"
+        +"<div class='pos'>"+(r+c)+"<span class='ut' style='background:"+ut[1]+"'>"+ut[0]+"</span></div>"
+        +"<div class='var'>"+esc(t.variete)+"</div></td>";
+    }
+    map+="</tr>";
+  });
+  map+="</tbody></table>";
+  // Liste détaillée
+  const rows=Object.values(state.trees).sort((a,b)=>a.rang===b.rang?a.col-b.col:a.rang.localeCompare(b.rang));
+  const list=rows.map(t=>{
+    const esp=espOf(t.variete),u=usageOf(t.variete),ut=useTag[u]||useTag["Non défini"];
+    return "<div class='it'><b>"+t.id+"</b> "+esc(t.variete)+" <span class='sub'>— "+esp+" · "+esc(u)+"</span> <i style='background:"+ut[1]+"'></i></div>";
+  }).join("");
+  const d=new Date().toLocaleDateString("fr-BE");
+  const html="<!DOCTYPE html><html lang='fr'><head><meta charset='utf-8'><title>Plan du verger</title><style>"
+    +"@page{size:A4 landscape;margin:9mm}"
+    +"*{box-sizing:border-box}body{font-family:Georgia,serif;color:#1a1a1a;margin:0}"
+    +"h1{font-size:15pt;margin:0 0 1mm}h2{font-size:11pt;margin:5mm 0 2mm}.meta{font-family:system-ui,sans-serif;font-size:8pt;color:#555;margin-bottom:3mm}"
+    +".leg{font-family:system-ui,sans-serif;font-size:8pt;color:#333;margin:2mm 0}.leg span{margin-right:10px}.leg i{display:inline-block;width:9px;height:9px;border-radius:2px;vertical-align:-1px;margin-right:3px}"
+    +"table.pmap{width:100%;border-collapse:collapse;table-layout:fixed}"
+    +".pmap th{font-family:system-ui,sans-serif;font-size:7pt;color:#555;padding:1px;text-align:center}"
+    +".pmap tbody th{width:5mm}"
+    +".pmap td{border:.4pt solid #cbcbcb;height:20mm;vertical-align:top;padding:1px 2px;overflow:hidden}"
+    +".pmap td.e{background:#f4f4f4;border:.4pt dashed #ddd}"
+    +".pmap .pos{font-family:system-ui,sans-serif;font-weight:700;font-size:7.5pt;display:flex;justify-content:space-between;align-items:center}"
+    +".pmap .ut{color:#fff;font-size:6pt;border-radius:2px;padding:0 3px;font-weight:700}"
+    +".pmap .var{font-size:6pt;line-height:1.05;margin-top:1px}"
+    +".list{column-count:3;column-gap:9mm;font-family:system-ui,sans-serif;font-size:8pt;line-height:1.35}"
+    +".it{break-inside:avoid;padding:.5px 0;border-bottom:.3pt solid #eee}.it b{font-family:Georgia,serif}.it .sub{color:#666}.it i{display:inline-block;width:8px;height:8px;border-radius:50%;vertical-align:0}"
+    +".pb{page-break-before:always}"
+    +"</style></head><body>"
+    +"<h1>Plan du verger</h1><div class='meta'>Poiriers &amp; pommiers · "+rows.length+" arbres · édité le "+d+"</div>"
+    +"<div class='leg'><span><i style='background:"+espBar.Pommier+"'></i>Pommier</span><span><i style='background:"+espBar.Poirier+"'></i>Poirier</span>"
+    +"<span style='margin-left:8mm'><i style='background:#C44536'></i>T = table</span><span><i style='background:#C9883A'></i>J = à jus</span><span><i style='background:#6B8E3D'></i>M = mixte</span></div>"
+    +map
+    +"<div class='pb'></div><h2>Détail par arbre — position · variété · espèce · usage</h2><div class='list'>"+list+"</div>"
+    +"<scr"+"ipt>window.onload=function(){setTimeout(function(){window.print();},250);}</scr"+"ipt>"
+    +"</body></html>";
+  const w=window.open("","_blank");
+  if(!w){alert("Autorisez les fenêtres pop-up pour générer le PDF (ou utilisez Fichier ▸ Imprimer, puis « Enregistrer au format PDF »).");return;}
+  w.document.open();w.document.write(html);w.document.close();
+}
 function doExport(){
   const blob=new Blob([JSON.stringify(state,null,2)],{type:"application/json"});
   const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="verger-"+new Date().toISOString().slice(0,10)+".json";
@@ -558,6 +621,7 @@ function init(){
   });
   document.getElementById("btnSettings").onclick=openSettings;
   document.getElementById("syncBadge").onclick=openSettings;
+  document.getElementById("btnPDF").onclick=exportPDF;
   document.getElementById("btnExport").onclick=doExport;
   document.getElementById("btnImport").onclick=()=>document.getElementById("fileInput").click();
   document.getElementById("fileInput").onchange=e=>{if(e.target.files[0])doImportFile(e.target.files[0]);e.target.value="";};
