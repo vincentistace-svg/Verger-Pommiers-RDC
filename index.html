@@ -355,8 +355,10 @@ function renderGrid(){
     for(let c=1;c<=20;c++){
       const id=r+c,t=state.trees[id];
       if(!t){h+="<td class='cell empty'><div class='tree'></div></td>";continue;}
-      if((mode==="statut"||mode==="alertes")&&t.statut==="Remplacé"){h+="<td class='cell'><div class='tree' data-id='"+id+"' style='background:var(--empty);border:1.5px dashed #d9d2c4'></div></td>";continue;}
-      const col=cellColor(t),fl=col.flag?" flag":"",label=t.variete.split(" ")[0].slice(0,4);
+      let col;
+      if((mode==="statut"||mode==="alertes")&&t.statut==="Remplacé")col={bg:"#CFE0CB",bd:"#cfe0cb",flag:false};
+      else col=cellColor(t);
+      const fl=col.flag?" flag":"",label=t.variete.split(" ")[0].slice(0,4);
       h+="<td class='cell'><div class='tree"+fl+"' data-id='"+id+"' style='background:"+col.bg+";border-color:"+col.bd+"'><span class='id'>"+id+"</span>"+esc(label)+"</div></td>";
     }
     h+="</tr>";
