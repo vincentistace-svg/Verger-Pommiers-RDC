@@ -3,41 +3,38 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Verger">
+<meta name="theme-color" content="#3F6B3A">
 <title>Plan du verger — suivi des arbres</title>
 <style>
   :root{
     --paper:#FBF9F4; --paper2:#F3EFE6; --ink:#2A2620; --ink2:#6B6457;
     --line:#E3DCCD; --leaf:#3F6B3A;
-    --apple:#B23A2E; --apple-bg:#F1D9D2;
-    --pear:#9A7C1E; --pear-bg:#EEE2BB;
-    --watch:#D98A00; --watch-bg:#FBE7C2;
-    --replace:#8A6FB0; --replace-bg:#E7DEF1;
-    --dead:#8E8678; --dead-bg:#DED9CF;
-    --empty:#EDE8DD;
+    --apple:#B23A2E; --pear:#9A7C1E;
+    --watch:#D98A00; --replace:#8A6FB0; --dead:#8E8678; --empty:#EDE8DD;
     --shadow:0 8px 30px rgba(42,38,32,.16);
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
   html,body{margin:0}
-  body{
-    background:var(--paper); color:var(--ink);
-    font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
-    font-size:16px; line-height:1.45;
-    padding-bottom:env(safe-area-inset-bottom);
-  }
-  h1,h2,h3{font-family:Georgia,"Times New Roman",serif; font-weight:600; margin:0}
+  body{background:var(--paper);color:var(--ink);
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;font-size:16px;line-height:1.45;
+    padding-bottom:env(safe-area-inset-bottom);padding-top:env(safe-area-inset-top)}
+  h1,h2,h3{font-family:Georgia,"Times New Roman",serif;font-weight:600;margin:0}
   .wrap{max-width:980px;margin:0 auto;padding:14px}
-
-  header{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:10px}
+  header{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:8px}
   header h1{font-size:22px;letter-spacing:.2px;line-height:1.1}
   header .sub{color:var(--ink2);font-size:13px}
   .grow{flex:1 1 auto}
+  .sync{font-size:12.5px;padding:6px 11px;border-radius:999px;border:1px solid var(--line);background:#fff;white-space:nowrap;cursor:pointer}
+  .sync.ok{color:var(--leaf);border-color:#cfe0cb;background:#eef5ec}
+  .sync.busy{color:#7a5a00;border-color:#e6c389;background:#fdf3e0}
+  .sync.off{color:var(--ink2)}
+  .sync.err{color:#9a3b2e;border-color:#e3b3aa;background:#f7e4df}
 
-  .save-state{font-size:12.5px;padding:5px 10px;border-radius:999px;border:1px solid var(--line);background:#fff;white-space:nowrap}
-  .save-state.dirty{color:#8a4b00;border-color:#e6c389;background:#fdf3e0}
-  .save-state.clean{color:var(--leaf);border-color:#cfe0cb;background:#eef5ec}
-
-  .toolbar{display:flex;gap:8px;flex-wrap:wrap;margin:6px 0 12px}
   button{font:inherit;cursor:pointer}
+  .toolbar{display:flex;gap:8px;flex-wrap:wrap;margin:6px 0 12px}
   .btn{border:1px solid var(--line);background:#fff;border-radius:10px;padding:9px 13px;font-size:14px;color:var(--ink);font-weight:600}
   .btn:active{transform:translateY(1px)}
   .btn.primary{background:var(--leaf);border-color:var(--leaf);color:#fff}
@@ -51,11 +48,10 @@
 
   .viewbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px}
   .viewbar .lab{font-size:12.5px;color:var(--ink2);text-transform:uppercase;letter-spacing:.5px}
-  .seg{display:inline-flex;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:#fff}
+  .seg{display:inline-flex;flex-wrap:wrap;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:#fff}
   .seg button{border:0;background:transparent;padding:7px 11px;font-size:13px;color:var(--ink2);font-weight:600}
   .seg button.on{background:var(--ink);color:var(--paper)}
 
-  /* GRID MAP */
   .mapscroll{overflow:auto;border:1px solid var(--line);border-radius:14px;background:#fff;-webkit-overflow-scrolling:touch}
   .grid{border-collapse:separate;border-spacing:0}
   .grid th,.grid td{padding:0;margin:0}
@@ -66,12 +62,10 @@
   .cell .tree{position:absolute;inset:4px;border-radius:9px;border:1.5px solid transparent;display:flex;align-items:center;justify-content:center;font:700 12px system-ui;color:#fff;background:var(--empty);user-select:none}
   .cell .id{position:absolute;top:2px;left:4px;font:600 9px system-ui;color:rgba(255,255,255,.85);letter-spacing:.2px}
   .cell.empty .tree{background:var(--empty);border-style:dashed;border-color:#d9d2c4}
-  .cell .dot{width:9px;height:9px;border-radius:50%}
   .cell .tree.flag::after{content:"";position:absolute;top:3px;right:3px;width:8px;height:8px;border-radius:50%;background:#fff;box-shadow:0 0 0 2px rgba(0,0,0,.18)}
   .legend{display:flex;gap:14px;flex-wrap:wrap;margin:10px 2px 0;font-size:12.5px;color:var(--ink2)}
   .legend i{display:inline-block;width:13px;height:13px;border-radius:4px;margin-right:6px;vertical-align:-2px;border:1.5px solid rgba(0,0,0,.12)}
 
-  /* ALERT LIST */
   .alerts{margin-top:16px}
   .alerts h2{font-size:16px;margin-bottom:8px}
   .chips{display:flex;flex-wrap:wrap;gap:7px}
@@ -80,7 +74,6 @@
   .chip .pip{width:8px;height:8px;border-radius:50%}
   .muted{color:var(--ink2);font-size:13.5px}
 
-  /* SHEET */
   .scrim{position:fixed;inset:0;background:rgba(30,26,20,.45);opacity:0;pointer-events:none;transition:opacity .2s;z-index:20}
   .scrim.open{opacity:1;pointer-events:auto}
   .sheet{position:fixed;left:0;right:0;bottom:0;z-index:21;background:var(--paper);border-radius:18px 18px 0 0;box-shadow:var(--shadow);
@@ -94,14 +87,14 @@
   .sheet-head h2{font-size:20px;line-height:1.1}
   .sheet-head .esp{font-size:13px;color:var(--ink2)}
   .closex{margin-left:auto;border:0;background:transparent;font-size:24px;line-height:1;color:var(--ink2);padding:2px 6px}
-  .badge{display:inline-block;font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;border:1px solid var(--line);color:var(--ink2);margin-left:6px;vertical-align:2px}
+  .badge{display:inline-block;font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;color:#fff;margin-left:6px;vertical-align:2px}
 
   .field{margin-top:14px}
   .field label{display:block;font-size:12px;text-transform:uppercase;letter-spacing:.5px;color:var(--ink2);margin-bottom:5px}
-  select,input[type=text],input[type=date],textarea{
-    width:100%;font:inherit;padding:11px 12px;border:1px solid var(--line);border-radius:11px;background:#fff;color:var(--ink)}
+  select,input[type=text],input[type=date],textarea{width:100%;font:inherit;padding:11px 12px;border:1px solid var(--line);border-radius:11px;background:#fff;color:var(--ink)}
   textarea{min-height:64px;resize:vertical}
   .row2{display:flex;gap:10px}.row2>*{flex:1}
+  .hint{font-size:11.5px;color:var(--ink2);margin-top:5px}
 
   .timeline{margin-top:16px;border-top:1px solid var(--line);padding-top:14px}
   .timeline h3{font-size:15px;margin-bottom:10px}
@@ -113,13 +106,21 @@
   .ev .type-pip{font-size:11px;font-weight:700;color:#fff;border-radius:6px;padding:1px 7px;display:inline-block;margin-bottom:3px}
   .ev .del{margin-left:auto;border:0;background:transparent;color:#b23a2e;font-size:12px;align-self:center}
   .none{color:var(--ink2);font-size:13.5px;font-style:italic}
-
   .addbox{margin-top:14px;background:var(--paper2);border:1px solid var(--line);border-radius:14px;padding:14px}
   .addbox h3{font-size:14px;margin-bottom:6px}
   .addbox .btn.primary{width:100%;margin-top:12px;padding:12px}
 
+  .seth h2{font-size:19px}
+  .step{margin-top:14px;padding-top:14px;border-top:1px solid var(--line)}
+  .step h3{font-size:14px;text-transform:uppercase;letter-spacing:.5px;color:var(--ink2)}
+  .pill{display:inline-block;font-size:12px;font-weight:700;padding:3px 9px;border-radius:999px;margin-bottom:8px}
+  .pill.on{background:#eef5ec;color:var(--leaf);border:1px solid #cfe0cb}
+  .pill.offp{background:#f3efe6;color:var(--ink2);border:1px solid var(--line)}
+  .help{font-size:13px;color:var(--ink2);line-height:1.5}
+  .help code{background:#fff;border:1px solid var(--line);border-radius:5px;padding:1px 5px;font-size:12.5px}
   .footnote{margin:22px 2px 8px;color:var(--ink2);font-size:12px;line-height:1.5}
   .hidden{display:none!important}
+  a{color:var(--leaf)}
 </style>
 </head>
 <body>
@@ -130,11 +131,12 @@
       <div class="sub">Suivi individuel des arbres · poiriers &amp; pommiers</div>
     </div>
     <div class="grow"></div>
-    <span id="saveState" class="save-state clean">Mémorisé sur cet appareil</span>
+    <span id="syncBadge" class="sync off">○ Local</span>
   </header>
 
   <div class="toolbar">
-    <button class="btn primary" id="btnExport">⤓ Exporter (Dropbox)</button>
+    <button class="btn primary" id="btnSettings">⚙︎ Dropbox</button>
+    <button class="btn" id="btnExport">⤓ Sauvegarde manuelle</button>
     <button class="btn" id="btnImport">⤒ Importer</button>
     <input type="file" id="fileInput" accept="application/json,.json" class="hidden">
     <button class="btn ghost" id="btnReset">Réinitialiser</button>
@@ -146,6 +148,7 @@
     <span class="lab">Colorer par</span>
     <div class="seg" id="modeSeg">
       <button data-mode="espece" class="on">Espèce</button>
+      <button data-mode="usage">Usage</button>
       <button data-mode="statut">Statut</button>
       <button data-mode="alertes">Alertes</button>
     </div>
@@ -163,17 +166,17 @@
 </div>
 
 <div class="scrim" id="scrim"></div>
-<div class="sheet" id="sheet">
-  <div class="grab"></div>
-  <div class="pad" id="sheetBody"></div>
-</div>
+<div class="sheet" id="sheet"><div class="grab"></div><div class="pad" id="sheetBody"></div></div>
+
+<div class="scrim" id="scrim2"></div>
+<div class="sheet seth" id="sheet2"><div class="grab"></div><div class="pad" id="setBody"></div></div>
 
 <script>
-/* ---------- Données fixes : la grille du verger (rangs A–F × colonnes 1–20) ---------- */
-const POIRIERS = new Set(["Ananas de Courtrai","Beurré Chaboceau","Beurré Lebrun","Comtesse de Paris","Joséphine de Malines","Saint-Mathieu","Triomphe de Vienne"]);
-const TABLE = new Set(["Court-pendu Rose","Cwastresse double","Cwastresse simple","Joseph Musch","Pomme de Paradis","Reinette Descardre","Reinette étoilée","Reinette Evagil","Transparente blanche"]);
+/* ===================== Données fixes ===================== */
+const POIRIERS=new Set(["Ananas de Courtrai","Beurré Chaboceau","Beurré Lebrun","Comtesse de Paris","Joséphine de Malines","Saint-Mathieu","Triomphe de Vienne"]);
+const TABLE=new Set(["Court-pendu Rose","Cwastresse double","Cwastresse simple","Joseph Musch","Pomme de Paradis","Reinette Descardre","Reinette étoilée","Reinette Evagil","Transparente blanche"]);
 const N=null;
-const GRID = {
+const GRID={
  A:["Saint-Mathieu","Saint-Mathieu","Triomphe de Vienne","Comtesse de Paris","Gueule de mouton","Cabarette","Cwastresse simple","Gris Braibant","Gris Braibant","Gris Braibant","Reinette de Waleffe","Ligita","Madame Colart","Reine des reinettes","Belle-fleur à large mouche","Cwastresse double","Belle-fleur double","Jacques Lebel","Président Roulin","Reinette Evagil"],
  B:["Saint-Mathieu","Comtesse de Paris","Beurré Chaboceau","Triomphe de Vienne","Gueule de mouton","Cabarette","Cwastresse simple","Reinette Hernaut","Gris Braibant","Reinette de Waleffe","Reinette de Waleffe","Ligita","Reine des reinettes","Reine des reinettes","Belle-fleur à large mouche","Cwastresse double","Belle-fleur double","Jacques Lebel","Président Roulin","Reinette Evagil"],
  C:[N,"Joséphine de Malines","Beurré Chaboceau","Beurré Lebrun","Gueule de mouton","Cabarette","Cwastresse simple","Reinette Hernaut","Court-pendu Rose","Edite","Reinette de Waleffe","Ligita","Madame Colart","Reine des reinettes","Belle-fleur à large mouche","Cwastresse double","Belle-fleur double","Pomme de Paradis","Transparente blanche","Reinette Evagil"],
@@ -182,9 +185,8 @@ const GRID = {
  F:[N,N,"Comtesse de Paris","Ananas de Courtrai","Ananas de Courtrai","Ananas de Courtrai","Belle-fleur simple","Belle-fleur simple","Court-pendu Rose","Edite","Reinette étoilée","Reinette étoilée","Joseph Musch","Joseph Musch","Belle-fleur à large mouche","Belle-fleur à large mouche","Reinette Descardre",N,N,N]
 };
 const RANGS=["A","B","C","D","E","F"];
-
-/* Observations déjà présentes dans le plan (fléchées par arbre) */
-const SEED_EVENTS = {
+const PLANT_DATE="2018-12";
+const SEED_EVENTS={
  C5:[{date:"",type:"Blessure",desc:"Blessure grillage sur tronc — à surveiller"}],
  D6:[{date:"",type:"Maladie / Chancre",desc:"Chancre — à surveiller"}],
  D7:[{date:"2024",type:"Bris de branche",desc:"Bris d'une grosse branche"}],
@@ -195,280 +197,375 @@ const SEED_EVENTS = {
  D17:[{date:"",type:"Maladie / Chancre",desc:"Chancre — à surveiller"}],
  F17:[{date:"",type:"Maladie / Chancre",desc:"Chancre — à surveiller"}]
 };
-const SEED_STATUS = {C5:"À surveiller",D6:"À surveiller",D8:"À surveiller",F8:"À surveiller",C11:"À surveiller",D17:"À surveiller",F17:"À surveiller"};
-
+const SEED_STATUS={C5:"À surveiller",D6:"À surveiller",D8:"À surveiller",F8:"À surveiller",C11:"À surveiller",D17:"À surveiller",F17:"À surveiller"};
 const STATUTS=["Vivant","À surveiller","À remplacer","Remplacé","Mort"];
 const STATUT_COLOR={"Vivant":"--leaf","À surveiller":"--watch","À remplacer":"--replace","Remplacé":"--dead","Mort":"--dead"};
+const USAGES=["Table","À jus","Table et jus"];
+const USAGE_COLOR={"Table":"#C44536","À jus":"#C9883A","Table et jus":"#6B8E3D","Non défini":"#B8B0A2"};
 const EVENT_TYPES=["Plantation","Remplacement","Maladie / Chancre","Taille","Taille sévère","Blessure","Bris de branche","Traitement","Floraison","Récolte","Observation"];
 const TYPE_COLOR={"Plantation":"#3F6B3A","Remplacement":"#8A6FB0","Maladie / Chancre":"#B23A2E","Taille":"#6B6457","Taille sévère":"#8a4b00","Blessure":"#C06000","Bris de branche":"#9A3B2E","Traitement":"#2E6E8A","Floraison":"#B07AA0","Récolte":"#9A7C1E","Observation":"#6B6457"};
 
-/* ---------- État ---------- */
-const LS_KEY="verger_plan_v1";
-let state=null, currentId=null, mode="espece", lastExport=null;
+/* ===================== Dropbox ===================== */
+function b64url(bytes){let s=btoa(String.fromCharCode.apply(null,bytes));return s.replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"");}
+const DBX={
+  get key(){return localStorage.getItem("dbx_app_key")||"";},
+  set key(v){localStorage.setItem("dbx_app_key",(v||"").trim());},
+  get connected(){return !!localStorage.getItem("dbx_refresh") && !!this.key;},
+  rand(n){const a=new Uint8Array(n);crypto.getRandomValues(a);return b64url(a).slice(0,n);},
+  async challenge(v){const buf=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(v));return b64url(new Uint8Array(buf));},
+  async authUrl(){
+    const v=this.rand(96);localStorage.setItem("dbx_verifier",v);
+    const c=await this.challenge(v);
+    const u=new URL("https://www.dropbox.com/oauth2/authorize");
+    u.searchParams.set("client_id",this.key);u.searchParams.set("response_type","code");
+    u.searchParams.set("code_challenge",c);u.searchParams.set("code_challenge_method","S256");
+    u.searchParams.set("token_access_type","offline");
+    return u.toString();
+  },
+  async finish(code){
+    const v=localStorage.getItem("dbx_verifier")||"";
+    const body=new URLSearchParams({code:code.trim(),grant_type:"authorization_code",code_verifier:v,client_id:this.key});
+    const r=await fetch("https://api.dropboxapi.com/oauth2/token",{method:"POST",headers:{"Content-Type":"application/x-www-form-urlencoded"},body});
+    const j=await r.json();
+    if(!j.refresh_token) throw new Error(j.error_description||j.error||"échec");
+    localStorage.setItem("dbx_refresh",j.refresh_token);localStorage.setItem("dbx_access",j.access_token);
+    localStorage.setItem("dbx_expiry",String(Date.now()+j.expires_in*1000-60000));localStorage.removeItem("dbx_verifier");
+  },
+  async token(){
+    const acc=localStorage.getItem("dbx_access"),exp=+localStorage.getItem("dbx_expiry")||0;
+    if(acc && Date.now()<exp) return acc;
+    const refresh=localStorage.getItem("dbx_refresh");
+    if(!refresh) throw new Error("non connecté");
+    const body=new URLSearchParams({grant_type:"refresh_token",refresh_token:refresh,client_id:this.key});
+    const r=await fetch("https://api.dropboxapi.com/oauth2/token",{method:"POST",headers:{"Content-Type":"application/x-www-form-urlencoded"},body});
+    const j=await r.json();
+    if(!j.access_token) throw new Error("rafraîchissement échoué");
+    localStorage.setItem("dbx_access",j.access_token);localStorage.setItem("dbx_expiry",String(Date.now()+j.expires_in*1000-60000));
+    return j.access_token;
+  },
+  async download(){
+    const t=await this.token();
+    const r=await fetch("https://content.dropboxapi.com/2/files/download",{method:"POST",
+      headers:{"Authorization":"Bearer "+t,"Dropbox-API-Arg":JSON.stringify({path:"/verger.json"})}});
+    if(r.status===409) return null;
+    if(!r.ok) throw new Error("download "+r.status);
+    return await r.text();
+  },
+  async upload(text){
+    const t=await this.token();
+    const r=await fetch("https://content.dropboxapi.com/2/files/upload",{method:"POST",
+      headers:{"Authorization":"Bearer "+t,"Dropbox-API-Arg":JSON.stringify({path:"/verger.json",mode:"overwrite",mute:true}),"Content-Type":"application/octet-stream"},
+      body:text});
+    if(!r.ok) throw new Error("upload "+r.status);
+  },
+  disconnect(){["dbx_refresh","dbx_access","dbx_expiry","dbx_verifier"].forEach(k=>localStorage.removeItem(k));}
+};
 
-function espece(v){return v && POIRIERS.has(v) ? "Poirier" : "Pommier";}
+/* ===================== État ===================== */
+const LS_KEY="verger_plan_v1";
+let state=null,currentId=null,mode="espece",syncTimer=null;
+
+function buildVarietes(){
+  const v={};
+  RANGS.forEach(r=>GRID[r].forEach(name=>{if(name&&!v[name])v[name]={espece:POIRIERS.has(name)?"Poirier":"Pommier",usage:TABLE.has(name)?"Table":"À jus"};}));
+  return v;
+}
 function buildDefault(){
   const trees={};
-  RANGS.forEach(r=>{
-    GRID[r].forEach((v,i)=>{
-      if(!v) return;
-      const id=r+(i+1);
-      trees[id]={id,rang:r,col:i+1,espece:espece(v),variete:v,
-        statut:SEED_STATUS[id]||"Vivant",portegreffe:"",anneePlantation:"2019",
-        table:TABLE.has(v),
-        events:(SEED_EVENTS[id]||[]).map(e=>({...e}))};
+  RANGS.forEach(r=>GRID[r].forEach((v,i)=>{
+    if(!v)return;const id=r+(i+1);
+    const events=[{date:PLANT_DATE,type:"Plantation",desc:"Plantation initiale du verger"}].concat((SEED_EVENTS[id]||[]).map(e=>({...e})));
+    trees[id]={id,rang:r,col:i+1,variete:v,statut:SEED_STATUS[id]||"Vivant",anneePlantation:"2018",events};
+  }));
+  return {meta:{nom:"Plan du verger",maj:new Date().toISOString(),version:2},varietes:buildVarietes(),especes:["Poirier","Pommier"],trees};
+}
+function normalize(s){
+  const base=buildDefault();
+  if(s&&s.trees){
+    Object.keys(base.trees).forEach(id=>{
+      if(s.trees[id]){
+        const it=s.trees[id];
+        base.trees[id]={...base.trees[id],...it,id,rang:base.trees[id].rang,col:base.trees[id].col};
+        if(!Array.isArray(base.trees[id].events))base.trees[id].events=[];
+        if(!base.trees[id].events.some(e=>e.type==="Plantation"))
+          base.trees[id].events.unshift({date:PLANT_DATE,type:"Plantation",desc:"Plantation initiale du verger"});
+        if(!base.trees[id].anneePlantation)base.trees[id].anneePlantation="2018";
+      }
     });
-  });
-  return {meta:{nom:"Plan du verger",maj:new Date().toISOString()}, trees};
+    Object.keys(s.trees).forEach(id=>{if(!base.trees[id])base.trees[id]=s.trees[id];});
+  }
+  base.varietes={...base.varietes,...((s&&s.varietes)||{})};
+  Object.values(base.trees).forEach(t=>{if(t.variete&&!base.varietes[t.variete])base.varietes[t.variete]={espece:POIRIERS.has(t.variete)?"Poirier":"Pommier",usage:TABLE.has(t.variete)?"Table":"À jus"};});
+  Object.values(base.varietes).forEach(c=>{if(!USAGES.includes(c.usage))c.usage="À jus";});
+  base.especes=Array.from(new Set(["Poirier","Pommier"].concat((s&&s.especes)||[]).concat(Object.values(base.varietes).map(v=>v.espece))));
+  if(s&&s.meta)base.meta={...base.meta,...s.meta};
+  base.meta.version=2;
+  return base;
 }
-function load(){
-  try{const raw=localStorage.getItem(LS_KEY); if(raw){const s=JSON.parse(raw); if(s&&s.trees){return s;}}}catch(e){}
-  return buildDefault();
+function espOf(v){return (state.varietes[v]&&state.varietes[v].espece)||(POIRIERS.has(v)?"Poirier":"Pommier");}
+function usageOf(v){return (state.varietes[v]&&state.varietes[v].usage)||(TABLE.has(v)?"Table":"À jus");}
+function ensureVar(v){if(v&&!state.varietes[v])state.varietes[v]={espece:POIRIERS.has(v)?"Poirier":"Pommier",usage:TABLE.has(v)?"Table":"À jus"};}
+
+function saveLocal(){try{localStorage.setItem(LS_KEY,JSON.stringify(state));}catch(e){}}
+function loadLocal(){try{const r=localStorage.getItem(LS_KEY);if(r){const s=JSON.parse(r);if(s&&s.trees)return normalize(s);}}catch(e){}return buildDefault();}
+
+function setSync(kind){
+  const el=document.getElementById("syncBadge");
+  const map={ok:["sync ok","✓ Synchronisé"],busy:["sync busy","↻ Synchronisation…"],
+    off:["sync off","○ Local — connecter Dropbox"],err:["sync err","⚠ Sync impossible (local OK)"]};
+  const m=map[kind]||map.off;el.className=m[0];el.textContent=m[1];
 }
-function persist(dirty){
-  state.meta.maj=new Date().toISOString();
-  try{localStorage.setItem(LS_KEY,JSON.stringify(state));}catch(e){}
-  setSaveState(dirty);
-}
-function setSaveState(dirty){
-  const el=document.getElementById("saveState");
-  if(dirty===false){el.className="save-state clean";el.textContent="Mémorisé sur cet appareil";}
-  else{el.className="save-state dirty";el.textContent="● Modifs non exportées vers Dropbox";}
+function persist(){state.meta.maj=new Date().toISOString();saveLocal();scheduleSync();}
+function scheduleSync(){if(!DBX.connected){setSync("off");return;}setSync("busy");clearTimeout(syncTimer);syncTimer=setTimeout(doSync,1400);}
+async function doSync(){if(!DBX.connected){setSync("off");return;}try{await DBX.upload(JSON.stringify(state));setSync("ok");}catch(e){setSync("err");}}
+async function initRemote(){
+  if(!DBX.connected){setSync("off");return;}
+  setSync("busy");
+  try{
+    const txt=await DBX.download();
+    if(txt){const s=JSON.parse(txt);if(s&&s.trees){state=normalize(s);saveLocal();renderGrid();}}
+    else{await DBX.upload(JSON.stringify(state));}
+    setSync("ok");
+  }catch(e){setSync("err");}
 }
 
-/* ---------- Rendu de la carte ---------- */
+/* ===================== Carte ===================== */
 function cellColor(t){
-  if(!t) return {bg:"var(--empty)",bd:"#d9d2c4",flag:false};
-  if(mode==="espece"){
-    return t.espece==="Poirier"
-      ? {bg:"var(--pear)",bd:"var(--pear)",flag:false}
-      : {bg:"var(--apple)",bd:"var(--apple)",flag:false};
-  }
-  if(mode==="statut"){
-    const c="var("+ (STATUT_COLOR[t.statut]||"--leaf") +")";
-    return {bg:c,bd:c,flag:false};
-  }
-  // alertes
-  const flagged = t.statut==="À surveiller"||t.statut==="À remplacer"||t.statut==="Mort"||t.statut==="Remplacé";
-  if(t.statut==="À surveiller") return {bg:"var(--watch)",bd:"var(--watch)",flag:true};
-  if(t.statut==="À remplacer") return {bg:"var(--replace)",bd:"var(--replace)",flag:true};
-  if(t.statut==="Mort"||t.statut==="Remplacé") return {bg:"var(--dead)",bd:"var(--dead)",flag:true};
+  if(mode==="espece") return espOf(t.variete)==="Poirier"?{bg:"var(--pear)",bd:"var(--pear)",flag:false}:{bg:"var(--apple)",bd:"var(--apple)",flag:false};
+  if(mode==="usage"){const c=USAGE_COLOR[usageOf(t.variete)]||USAGE_COLOR["Non défini"];return {bg:c,bd:c,flag:false};}
+  if(mode==="statut"){const c="var("+(STATUT_COLOR[t.statut]||"--leaf")+")";return {bg:c,bd:c,flag:false};}
+  if(t.statut==="À surveiller")return{bg:"var(--watch)",bd:"var(--watch)",flag:true};
+  if(t.statut==="À remplacer")return{bg:"var(--replace)",bd:"var(--replace)",flag:true};
+  if(t.statut==="Mort"||t.statut==="Remplacé")return{bg:"var(--dead)",bd:"var(--dead)",flag:true};
   return {bg:"#CFE0CB",bd:"#cfe0cb",flag:false};
 }
 function renderGrid(){
   const tbl=document.getElementById("grid");
   let h="<thead><tr><th class='corner'></th>";
-  for(let c=1;c<=20;c++) h+="<th>"+c+"</th>";
+  for(let c=1;c<=20;c++)h+="<th>"+c+"</th>";
   h+="</tr></thead><tbody>";
   RANGS.forEach(r=>{
     h+="<tr><th>"+r+"</th>";
     for(let c=1;c<=20;c++){
-      const id=r+c, t=state.trees[id];
-      if(!t){ h+="<td class='cell empty'><div class='tree'></div></td>"; continue; }
-      const col=cellColor(t);
-      const flagCls=col.flag?" flag":"";
-      const label=t.variete.split(" ")[0].slice(0,4);
-      h+="<td class='cell'><div class='tree"+flagCls+"' data-id='"+id+"' style='background:"+col.bg+";border-color:"+col.bd+"'>"
-         +"<span class='id'>"+id+"</span>"+esc(label)+"</div></td>";
+      const id=r+c,t=state.trees[id];
+      if(!t){h+="<td class='cell empty'><div class='tree'></div></td>";continue;}
+      const col=cellColor(t),fl=col.flag?" flag":"",label=t.variete.split(" ")[0].slice(0,4);
+      h+="<td class='cell'><div class='tree"+fl+"' data-id='"+id+"' style='background:"+col.bg+";border-color:"+col.bd+"'><span class='id'>"+id+"</span>"+esc(label)+"</div></td>";
     }
     h+="</tr>";
   });
-  h+="</tbody>";
-  tbl.innerHTML=h;
+  h+="</tbody>";tbl.innerHTML=h;
   tbl.querySelectorAll(".tree[data-id]").forEach(el=>el.addEventListener("click",()=>openSheet(el.dataset.id)));
-  renderLegend(); renderStats(); renderAlerts();
+  renderLegend();renderStats();renderAlerts();
 }
 function renderLegend(){
-  const L=document.getElementById("legend"); let h="";
-  if(mode==="espece"){
-    h="<span><i style='background:var(--apple)'></i>Pommier</span><span><i style='background:var(--pear)'></i>Poirier</span>";
-  }else if(mode==="statut"){
-    h=STATUTS.map(s=>"<span><i style='background:var("+(STATUT_COLOR[s])+")'></i>"+s+"</span>").join("");
-  }else{
-    h="<span><i style='background:var(--watch)'></i>À surveiller</span><span><i style='background:var(--replace)'></i>À remplacer</span><span><i style='background:var(--dead)'></i>Mort / remplacé</span><span><i style='background:#CFE0CB'></i>Sain</span>";
-  }
-  L.innerHTML=h;
+  const L=document.getElementById("legend");
+  if(mode==="espece")L.innerHTML="<span><i style='background:var(--apple)'></i>Pommier</span><span><i style='background:var(--pear)'></i>Poirier</span>";
+  else if(mode==="usage")L.innerHTML=USAGES.map(u=>"<span><i style='background:"+USAGE_COLOR[u]+"'></i>"+u+"</span>").join("");
+  else if(mode==="statut")L.innerHTML=STATUTS.map(s=>"<span><i style='background:var("+STATUT_COLOR[s]+")'></i>"+s+"</span>").join("");
+  else L.innerHTML="<span><i style='background:var(--watch)'></i>À surveiller</span><span><i style='background:var(--replace)'></i>À remplacer</span><span><i style='background:var(--dead)'></i>Mort / remplacé</span><span><i style='background:#CFE0CB'></i>Sain</span>";
 }
 function renderStats(){
   const t=Object.values(state.trees);
-  const n=t.length, watch=t.filter(x=>x.statut==="À surveiller").length,
-        repl=t.filter(x=>x.statut==="À remplacer").length,
-        dead=t.filter(x=>x.statut==="Mort").length;
   document.getElementById("stats").innerHTML=
-    stat(n,"Arbres")+stat(watch,"À surveiller","watch")+stat(repl,"À remplacer","replace")+stat(dead,"Morts");
+    stat(t.length,"Arbres")+stat(t.filter(x=>x.statut==="À surveiller").length,"À surveiller","watch")
+    +stat(t.filter(x=>x.statut==="À remplacer").length,"À remplacer","replace")+stat(t.filter(x=>x.statut==="Mort").length,"Morts");
 }
 function stat(n,l,cls){return "<div class='stat "+(cls||"")+"'><b>"+n+"</b><span>"+l+"</span></div>";}
 function renderAlerts(){
   const box=document.getElementById("alertChips");
-  const flagged=Object.values(state.trees)
-    .filter(x=>x.statut!=="Vivant")
-    .sort((a,b)=> a.rang===b.rang ? a.col-b.col : a.rang.localeCompare(b.rang));
-  if(!flagged.length){box.innerHTML="<span class='muted'>Aucun arbre signalé. Touchez une case pour ajouter une observation.</span>";return;}
-  box.innerHTML=flagged.map(x=>{
-    const c="var("+(STATUT_COLOR[x.statut]||"--leaf")+")";
-    return "<button class='chip' data-id='"+x.id+"'><span class='pip' style='background:"+c+"'></span><b>"+x.id+"</b> "+esc(x.variete)+" — "+x.statut+"</button>";
-  }).join("");
+  const f=Object.values(state.trees).filter(x=>x.statut!=="Vivant").sort((a,b)=>a.rang===b.rang?a.col-b.col:a.rang.localeCompare(b.rang));
+  if(!f.length){box.innerHTML="<span class='muted'>Aucun arbre signalé. Touchez une case pour ajouter une observation.</span>";return;}
+  box.innerHTML=f.map(x=>"<button class='chip' data-id='"+x.id+"'><span class='pip' style='background:var("+(STATUT_COLOR[x.statut]||"--leaf")+")'></span><b>"+x.id+"</b> "+esc(x.variete)+" — "+x.statut+"</button>").join("");
   box.querySelectorAll(".chip").forEach(el=>el.addEventListener("click",()=>openSheet(el.dataset.id)));
 }
 
-/* ---------- Fiche arbre (sheet) ---------- */
+/* ===================== Fiche arbre ===================== */
 function openSheet(id){
-  currentId=id; const t=state.trees[id];
-  const b=document.getElementById("sheetBody");
-  const tableBadge=t.table?"<span class='badge'>fruit de table</span>":"";
-  b.innerHTML=`
+  currentId=id;const t=state.trees[id];ensureVar(t.variete);
+  const cat=state.varietes[t.variete];
+  const usage=cat.usage;
+  const usageBadge="<span class='badge' style='background:"+(USAGE_COLOR[usage]||USAGE_COLOR['Non défini'])+"'>"+esc(usage)+"</span>";
+  const vnames=Object.keys(state.varietes).sort((a,b)=>a.localeCompare(b,"fr"));
+  if(!vnames.includes(t.variete))vnames.unshift(t.variete);
+  const vOpts=vnames.map(n=>`<option ${n===t.variete?"selected":""}>${esc(n)}</option>`).join("")+`<option value="__add__">➕ Ajouter une variété…</option>`;
+  const eList=state.especes.slice().sort((a,b)=>a.localeCompare(b,"fr"));
+  if(!eList.includes(cat.espece))eList.unshift(cat.espece);
+  const eOpts=eList.map(n=>`<option ${n===cat.espece?"selected":""}>${esc(n)}</option>`).join("")+`<option value="__add__">➕ Ajouter…</option>`;
+  const uOpts=USAGES.map(n=>`<option ${n===usage?"selected":""}>${esc(n)}</option>`).join("");
+
+  document.getElementById("sheetBody").innerHTML=`
     <div class="sheet-head">
       <div class="idbadge">${id}</div>
-      <div>
-        <h2>${esc(t.variete)}${tableBadge}</h2>
-        <div class="esp">${t.espece} · rang ${t.rang}, colonne ${t.col}</div>
-      </div>
+      <div><h2>${esc(t.variete)}${usageBadge}</h2><div class="esp">${esc(cat.espece)} · rang ${t.rang}, colonne ${t.col}</div></div>
       <button class="closex" id="closeBtn">×</button>
     </div>
-
     <div class="row2">
-      <div class="field"><label>Statut</label>
-        <select id="fStatut">${STATUTS.map(s=>`<option ${s===t.statut?"selected":""}>${s}</option>`).join("")}</select></div>
-      <div class="field"><label>Année plantation</label>
-        <input type="text" id="fAnnee" value="${esc(t.anneePlantation||"")}" inputmode="numeric"></div>
+      <div class="field"><label>Statut</label><select id="fStatut">${STATUTS.map(s=>`<option ${s===t.statut?"selected":""}>${s}</option>`).join("")}</select></div>
+      <div class="field"><label>Année plantation</label><input type="text" id="fAnnee" value="${esc(t.anneePlantation||"")}" inputmode="numeric"></div>
     </div>
+    <div class="field"><label>Variété</label><select id="fVariete">${vOpts}</select></div>
     <div class="row2">
-      <div class="field"><label>Variété</label>
-        <input type="text" id="fVariete" value="${esc(t.variete)}"></div>
-      <div class="field"><label>Porte-greffe</label>
-        <input type="text" id="fPorte" value="${esc(t.portegreffe||"")}" placeholder="—"></div>
+      <div class="field"><label>Espèce</label><select id="fEspece">${eOpts}</select></div>
+      <div class="field"><label>Usage</label><select id="fUsage">${uOpts}</select></div>
     </div>
+    <p class="hint">Espèce et usage s'appliquent à tous les arbres de la variété « ${esc(t.variete)} ».</p>
 
     <div class="addbox">
       <h3>Ajouter une observation</h3>
       <div class="row2">
         <div class="field" style="margin-top:8px"><label>Date</label><input type="date" id="aDate"></div>
-        <div class="field" style="margin-top:8px"><label>Type</label>
-          <select id="aType">${EVENT_TYPES.map(e=>`<option>${e}</option>`).join("")}</select></div>
+        <div class="field" style="margin-top:8px"><label>Type</label><select id="aType">${EVENT_TYPES.map(e=>`<option>${e}</option>`).join("")}</select></div>
       </div>
       <div class="field"><label>Description</label><textarea id="aDesc" placeholder="Ce que vous constatez sur le terrain…"></textarea></div>
       <button class="btn primary" id="addBtn">Enregistrer l'observation</button>
     </div>
+    <div class="timeline"><h3>Historique</h3><div id="evList"></div></div>`;
 
-    <div class="timeline">
-      <h3>Historique</h3>
-      <div id="evList"></div>
-    </div>
-  `;
   document.getElementById("aDate").value=new Date().toISOString().slice(0,10);
   document.getElementById("closeBtn").onclick=closeSheet;
-  document.getElementById("fStatut").onchange=e=>{t.statut=e.target.value;persist(true);renderGrid();};
-  document.getElementById("fVariete").onchange=e=>{t.variete=e.target.value.trim()||t.variete;t.espece=espece(t.variete);t.table=TABLE.has(t.variete);persist(true);renderGrid();openSheet(id);};
-  document.getElementById("fPorte").onchange=e=>{t.portegreffe=e.target.value.trim();persist(true);};
-  document.getElementById("fAnnee").onchange=e=>{t.anneePlantation=e.target.value.trim();persist(true);};
+  document.getElementById("fStatut").onchange=e=>{t.statut=e.target.value;persist();renderGrid();};
+  document.getElementById("fAnnee").onchange=e=>{t.anneePlantation=e.target.value.trim();persist();};
+  document.getElementById("fVariete").onchange=e=>{
+    const val=e.target.value;
+    if(val==="__add__"){
+      const name=(prompt("Nom de la nouvelle variété :")||"").trim();
+      if(!name){openSheet(id);return;}
+      if(!state.varietes[name])state.varietes[name]={espece:cat.espece,usage:"À jus"};
+      t.variete=name;
+    }else t.variete=val;
+    ensureVar(t.variete);persist();renderGrid();openSheet(id);
+  };
+  document.getElementById("fEspece").onchange=e=>{
+    const val=e.target.value;
+    if(val==="__add__"){
+      const name=(prompt("Nouvelle espèce :")||"").trim();
+      if(!name){openSheet(id);return;}
+      if(!state.especes.includes(name))state.especes.push(name);
+      state.varietes[t.variete].espece=name;
+    }else state.varietes[t.variete].espece=val;
+    persist();renderGrid();openSheet(id);
+  };
+  document.getElementById("fUsage").onchange=e=>{state.varietes[t.variete].usage=e.target.value;persist();renderGrid();openSheet(id);};
   document.getElementById("addBtn").onclick=addEvent;
   renderEvents();
   document.getElementById("scrim").classList.add("open");
   document.getElementById("sheet").classList.add("open");
 }
 function renderEvents(){
-  const t=state.trees[currentId];
-  const list=document.getElementById("evList");
+  const t=state.trees[currentId],list=document.getElementById("evList");
   const evs=[...t.events].map((e,i)=>({e,i})).reverse();
   if(!evs.length){list.innerHTML="<p class='none'>Aucun événement pour l'instant.</p>";return;}
-  list.innerHTML=evs.map(({e,i})=>{
-    const c=TYPE_COLOR[e.type]||"#6B6457";
-    const when=e.date?fmtDate(e.date):"sans date";
-    return `<div class="ev">
-      <div class="when">${when}</div>
-      <div class="what"><span class="type-pip" style="background:${c}">${esc(e.type)}</span>
-        <span>${esc(e.desc||"")}</span></div>
-      <button class="del" data-i="${i}">supprimer</button>
-    </div>`;
+  list.innerHTML=evs.map(o=>{
+    const e=o.e,c=TYPE_COLOR[e.type]||"#6B6457",when=e.date?fmtDate(e.date):"sans date";
+    return `<div class="ev"><div class="when">${when}</div><div class="what"><span class="type-pip" style="background:${c}">${esc(e.type)}</span><span>${esc(e.desc||"")}</span></div><button class="del" data-i="${o.i}">supprimer</button></div>`;
   }).join("");
-  list.querySelectorAll(".del").forEach(el=>el.onclick=()=>{
-    if(confirm("Supprimer cet événement ?")){t.events.splice(+el.dataset.i,1);persist(true);renderEvents();}
-  });
+  list.querySelectorAll(".del").forEach(el=>el.onclick=()=>{if(confirm("Supprimer cet événement ?")){t.events.splice(+el.dataset.i,1);persist();renderEvents();}});
 }
 function addEvent(){
   const t=state.trees[currentId];
-  const date=document.getElementById("aDate").value;
-  const type=document.getElementById("aType").value;
-  const desc=document.getElementById("aDesc").value.trim();
-  if(!desc && !confirm("Description vide. Enregistrer quand même ?")) return;
+  const date=document.getElementById("aDate").value,type=document.getElementById("aType").value,desc=document.getElementById("aDesc").value.trim();
+  if(!desc && !confirm("Description vide. Enregistrer quand même ?"))return;
   t.events.push({date,type,desc});
-  // raccourcis de statut automatiques
-  if(type==="Remplacement"){t.statut="Remplacé";}
-  else if((type==="Maladie / Chancre"||type==="Blessure")&&t.statut==="Vivant"){t.statut="À surveiller";}
-  persist(true);
-  document.getElementById("aDesc").value="";
-  renderEvents(); renderGrid();
-  // refléter un éventuel changement de statut dans le select
-  const sel=document.getElementById("fStatut"); if(sel) sel.value=t.statut;
+  if(type==="Remplacement")t.statut="Remplacé";
+  else if((type==="Maladie / Chancre"||type==="Blessure")&&t.statut==="Vivant")t.statut="À surveiller";
+  persist();document.getElementById("aDesc").value="";renderEvents();renderGrid();
+  const sel=document.getElementById("fStatut");if(sel)sel.value=t.statut;
 }
-function closeSheet(){
-  document.getElementById("scrim").classList.remove("open");
-  document.getElementById("sheet").classList.remove("open");
-  currentId=null;
-}
+function closeSheet(){document.getElementById("scrim").classList.remove("open");document.getElementById("sheet").classList.remove("open");currentId=null;}
 
-/* ---------- Export / Import ---------- */
+/* ===================== Réglages Dropbox ===================== */
+function openSettings(){
+  const on=DBX.connected;
+  document.getElementById("setBody").innerHTML=`
+    <div class="sheet-head"><div><h2>Synchronisation Dropbox</h2>
+      <div class="esp">${on?"<span class='pill on'>Connecté</span>":"<span class='pill offp'>Non connecté</span>"}</div></div>
+      <button class="closex" id="setClose">×</button></div>
+    <div class="step">
+      <h3>1 · Clé d'application</h3>
+      <p class="help">Collez l'<b>App key</b> de votre app Dropbox (dropbox.com/developers/apps, accès « App folder », autorisations <code>files.content.read</code> et <code>files.content.write</code>).</p>
+      <div class="field"><label>App key</label><input type="text" id="setKey" value="${esc(DBX.key)}" placeholder="ex. ab12cd34ef56gh7" autocapitalize="off" autocorrect="off" spellcheck="false"></div>
+    </div>
+    <div class="step">
+      <h3>2 · Connexion</h3>
+      <p class="help">Touchez « Ouvrir Dropbox », autorisez, puis <b>copiez le code affiché</b> et collez-le ci-dessous.</p>
+      <div class="toolbar" style="margin:8px 0 0">
+        <button class="btn primary" id="setAuth">Ouvrir Dropbox</button>
+        ${on?`<button class="btn" id="setDisc">Déconnecter</button>`:""}
+      </div>
+      <div class="field"><label>Code d'autorisation</label><input type="text" id="setCode" placeholder="collez le code ici" autocapitalize="off" autocorrect="off" spellcheck="false"></div>
+      <button class="btn primary" id="setValidate" style="width:100%;padding:12px;margin-top:4px">Valider la connexion</button>
+    </div>
+    <div class="step">
+      <h3>3 · Données</h3>
+      <p class="help">Fichier synchronisé : <code>Apps/&lt;votre app&gt;/verger.json</code>. Chaque modification est renvoyée automatiquement.</p>
+      <div class="toolbar" style="margin:8px 0 0">
+        <button class="btn" id="setPull">↓ Recharger depuis Dropbox</button>
+        <button class="btn" id="setPush">↑ Forcer l'envoi</button>
+      </div>
+    </div>`;
+  document.getElementById("setClose").onclick=closeSettings;
+  document.getElementById("setKey").onchange=e=>{DBX.key=e.target.value;};
+  document.getElementById("setAuth").onclick=async()=>{
+    DBX.key=document.getElementById("setKey").value;
+    if(!DBX.key){alert("Entrez d'abord l'App key.");return;}
+    const url=await DBX.authUrl();const w=window.open(url,"_blank");
+    if(!w){if(confirm("Ouvrir la page d'autorisation Dropbox ?"))location.href=url;}
+  };
+  document.getElementById("setValidate").onclick=async()=>{
+    const code=document.getElementById("setCode").value;
+    if(!code.trim()){alert("Collez le code d'autorisation.");return;}
+    try{await DBX.finish(code);await initRemote();openSettings();alert("Dropbox connecté. Synchronisation active.");}
+    catch(e){alert("Connexion impossible : "+e.message+"\\nVérifiez l'App key et le code.");}
+  };
+  const disc=document.getElementById("setDisc");
+  if(disc)disc.onclick=()=>{if(confirm("Déconnecter Dropbox ? Vos données locales restent sur l'appareil.")){DBX.disconnect();setSync("off");openSettings();}};
+  document.getElementById("setPull").onclick=async()=>{if(!DBX.connected){alert("Connectez Dropbox d'abord.");return;}await initRemote();alert("Données rechargées depuis Dropbox.");};
+  document.getElementById("setPush").onclick=async()=>{if(!DBX.connected){alert("Connectez Dropbox d'abord.");return;}await doSync();alert("Données envoyées vers Dropbox.");};
+  document.getElementById("scrim2").classList.add("open");
+  document.getElementById("sheet2").classList.add("open");
+}
+function closeSettings(){document.getElementById("scrim2").classList.remove("open");document.getElementById("sheet2").classList.remove("open");}
+
+/* ===================== Sauvegarde manuelle ===================== */
 function doExport(){
   const blob=new Blob([JSON.stringify(state,null,2)],{type:"application/json"});
-  const a=document.createElement("a");
-  const d=new Date().toISOString().slice(0,10);
-  a.href=URL.createObjectURL(blob);
-  a.download="verger-"+d+".json";
-  document.body.appendChild(a);a.click();a.remove();
-  setTimeout(()=>URL.revokeObjectURL(a.href),1500);
-  lastExport=Date.now(); setSaveState(false);
+  const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="verger-"+new Date().toISOString().slice(0,10)+".json";
+  document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),1500);
 }
-function doImport(file){
+function doImportFile(file){
   const r=new FileReader();
-  r.onload=()=>{
-    try{
-      const s=JSON.parse(r.result);
-      if(!s||!s.trees) throw new Error("structure");
-      // fusion : on repart de la grille de référence, puis on superpose les données importées
-      const base=buildDefault();
-      Object.keys(base.trees).forEach(id=>{ if(s.trees[id]) base.trees[id]={...base.trees[id],...s.trees[id],id,rang:base.trees[id].rang,col:base.trees[id].col}; });
-      // garder aussi d'éventuels arbres importés hors grille
-      Object.keys(s.trees).forEach(id=>{ if(!base.trees[id]) base.trees[id]=s.trees[id]; });
-      if(s.meta) base.meta={...base.meta,...s.meta};
-      state=base; persist(false); renderGrid();
-      alert("Données importées.");
-    }catch(e){ alert("Fichier illisible. Sélectionnez un fichier verger-….json exporté par cette appli."); }
-  };
+  r.onload=()=>{try{const s=JSON.parse(r.result);if(!s||!s.trees)throw 0;state=normalize(s);persist();renderGrid();alert("Données importées.");}
+    catch(e){alert("Fichier illisible. Choisissez un verger-….json exporté par cette appli.");}};
   r.readAsText(file);
 }
 
-/* ---------- Utilitaires ---------- */
+/* ===================== Utilitaires ===================== */
 function esc(s){return (s==null?"":String(s)).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]));}
 function fmtDate(d){
-  if(/^\d{4}$/.test(d)) return d;
-  const m=/^(\d{4})-(\d{2})-(\d{2})/.exec(d);
-  if(m) return m[3]+"/"+m[2]+"/"+m[1];
-  return d;
+  if(/^\d{4}$/.test(d))return d;
+  const mm=/^(\d{4})-(\d{2})$/.exec(d);if(mm)return mm[2]+"/"+mm[1];
+  const m=/^(\d{4})-(\d{2})-(\d{2})/.exec(d);return m?m[3]+"/"+m[2]+"/"+m[1]:d;
 }
 
-/* ---------- Init ---------- */
+/* ===================== Init ===================== */
 function init(){
-  state=load();
-  setSaveState(false);
+  state=loadLocal();
   renderGrid();
+  setSync(DBX.connected?"busy":"off");
   document.getElementById("modeSeg").querySelectorAll("button").forEach(b=>{
-    b.onclick=()=>{mode=b.dataset.mode;
-      document.querySelectorAll("#modeSeg button").forEach(x=>x.classList.toggle("on",x===b));
-      renderGrid();};
+    b.onclick=()=>{mode=b.dataset.mode;document.querySelectorAll("#modeSeg button").forEach(x=>x.classList.toggle("on",x===b));renderGrid();};
   });
+  document.getElementById("btnSettings").onclick=openSettings;
+  document.getElementById("syncBadge").onclick=openSettings;
   document.getElementById("btnExport").onclick=doExport;
   document.getElementById("btnImport").onclick=()=>document.getElementById("fileInput").click();
-  document.getElementById("fileInput").onchange=e=>{ if(e.target.files[0]) doImport(e.target.files[0]); e.target.value=""; };
-  document.getElementById("btnReset").onclick=()=>{ if(confirm("Réinitialiser à partir du plan d'origine ? Les saisies non exportées seront perdues.")){state=buildDefault();persist(false);renderGrid();} };
+  document.getElementById("fileInput").onchange=e=>{if(e.target.files[0])doImportFile(e.target.files[0]);e.target.value="";};
+  document.getElementById("btnReset").onclick=()=>{if(confirm("Réinitialiser à partir du plan d'origine ? Les saisies non synchronisées seront perdues.")){state=buildDefault();persist();renderGrid();}};
   document.getElementById("scrim").onclick=closeSheet;
-  document.getElementById("foot").textContent=
-    "Astuce : vos saisies sont mémorisées sur cet appareil/navigateur. Pour les retrouver sur un autre appareil, touchez « Exporter » et déposez le fichier verger-….json sur Dropbox, puis « Importer » sur l'autre appareil. Dropbox synchronise ce fichier de données, pas la page elle-même.";
-  // avertir si on quitte avec des modifs non exportées
-  let dirtyTouched=false;
-  document.addEventListener("change",()=>{dirtyTouched=true;},true);
-  window.addEventListener("beforeunload",e=>{
-    if(document.getElementById("saveState").classList.contains("dirty")){e.preventDefault();e.returnValue="";}
-  });
+  document.getElementById("scrim2").onclick=closeSettings;
+  document.getElementById("foot").textContent="Plantation initiale de tous les arbres : décembre 2018 (modifiable arbre par arbre). Le mode « Usage » colore selon table / à jus, défini par variété. Synchro Dropbox automatique quand l'appli est connectée.";
+  initRemote();
 }
 init();
 </script>
