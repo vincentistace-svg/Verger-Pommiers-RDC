@@ -137,6 +137,7 @@
   <div class="toolbar">
     <button class="btn primary" id="btnSettings">⚙︎ Dropbox</button>
     <button class="btn" id="btnPDF">⎙ Plan PDF</button>
+    <button class="btn" id="btnAlertes">⚠ Plan des alertes</button>
     <button class="btn" id="btnExport">⤓ Sauvegarde manuelle</button>
     <button class="btn" id="btnImport">⤒ Importer</button>
     <input type="file" id="fileInput" accept="application/json,.json" class="hidden">
@@ -594,6 +595,98 @@ function exportPDF(){
   if(!w){alert("Autorisez les fenêtres pop-up pour générer le PDF (ou utilisez Fichier ▸ Imprimer, puis « Enregistrer au format PDF »).");return;}
   w.document.open();w.document.write(html);w.document.close();
 }
+/* Plan des alertes — document de chantier destiné à l'entreprise.
+   Hiérarchie inversée par rapport au plan variétal : les arbres sains
+   s'effacent, seules les alertes ressortent. */
+function exportPDFAlertes(){
+  const rows=Object.values(state.trees).sort((a,b)=>a.rang===b.rang?a.col-b.col:a.rang.localeCompare(b.rang));
+  const morts=rows.filter(t=>t.statut==="Mort"||t.statut==="À remplacer");
+  const surv=rows.filter(t=>t.statut==="À surveiller");
+  const nbRepl=rows.filter(t=>t.statut==="Remplacé").length;
+  const num={};morts.forEach((t,i)=>num[t.id]=i+1);
+  const obsOf=t=>(t.events||[]).filter(e=>!(e.type==="Plantation"&&/initiale/.test(e.desc||"")))
+    .sort((a,b)=>(b.date||"").localeCompare(a.date||""));
+  const abrev=v=>String(v||"").replace("Belle-fleur","B-fleur").slice(0,6);
+
+  let map="<table class='amap'><tr><td class='cor'></td>";
+  for(let c=1;c<=20;c++)map+="<th class='ch'>"+c+"</th>";
+  map+="</tr>";
+  RANGS.forEach(r=>{
+    map+="<tr><th class='rh'>"+r+"</th>";
+    for(let c=1;c<=20;c++){
+      const t=state.trees[r+c];
+      if(!t){map+="<td class='c vide'></td>";continue;}
+      const cls=(t.statut==="Mort"||t.statut==="À remplacer")?"mort":(t.statut==="À surveiller"?"surv":(t.statut==="Remplacé"?"repl":"sain"));
+      const bg=num[t.id]?"<span class='bg'>"+num[t.id]+"</span>":"";
+      map+="<td class='c "+cls+"'>"+bg+"<span class='id'>"+t.id+"</span><span class='va'>"+esc(abrev(t.variete))+"</span></td>";
+    }
+    map+="</tr>";
+  });
+  map+="</table>";
+
+  const tab=morts.map(t=>{
+    const o=obsOf(t),cst=o.length?esc(o[0].desc):"—",dt=o.length&&o[0].date?o[0].date.slice(0,7):"";
+    return "<tr><td class='n'>"+num[t.id]+"</td><td class='rep'>"+t.id+"</td><td>"+esc(t.variete)+"</td>"
+      +"<td>"+espOf(t.variete)+"</td><td>"+esc(usageOf(t.variete))+"</td>"
+      +"<td class='cst'>"+cst+(dt?" <span class='dt'>("+dt+")</span>":"")+"</td><td class='box'></td></tr>";
+  }).join("");
+  const liste=surv.map(t=>{
+    const o=obsOf(t);
+    return "<li><b>"+t.id+"</b> "+esc(t.variete)+" — "+(o.length?o.map(e=>esc(e.desc)).join(" · "):"—")+"</li>";
+  }).join("");
+  const d=new Date().toLocaleDateString("fr-BE");
+
+  const html="<!DOCTYPE html><html lang='fr'><head><meta charset='utf-8'><title>Plan des alertes</title><style>"
+    +"@page{size:A4 landscape;margin:9mm 10mm}*{box-sizing:border-box}"
+    +"body{margin:0;font-family:'Segoe UI',system-ui,-apple-system,Helvetica,Arial,sans-serif;color:#1A211C;font-size:9pt;line-height:1.35}"
+    +".hd{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:2px solid #1A211C;padding-bottom:5px;margin-bottom:9px}"
+    +"h1{font-size:16pt;margin:0}.sub{font-size:8.5pt;color:#5B655F;margin-top:2px}"
+    +".kpi{display:flex;gap:14px;text-align:right}.kpi div{min-width:52px}"
+    +".kpi .v{font-size:15pt;font-weight:700;line-height:1}.kpi .k{font-size:7pt;color:#5B655F;text-transform:uppercase;letter-spacing:.4px}"
+    +".kpi .r .v{color:#B4321F}.kpi .s .v{color:#C8860D}"
+    +"table.amap{border-collapse:separate;border-spacing:2px;width:100%;table-layout:fixed}"
+    +".cor{width:16px}.ch{font-size:7pt;color:#5B655F;font-weight:600}.rh{font-size:9pt;font-weight:700;width:16px}"
+    +"td.c{height:34px;border-radius:3px;position:relative;text-align:center;padding:2px 1px 0;overflow:hidden}"
+    +".id{display:block;font-size:5.6pt;opacity:.75;line-height:1}.va{display:block;font-size:6.6pt;font-weight:600;line-height:1.05;margin-top:1px}"
+    +".sain{background:#E7EFE6;color:#3C4A40}.repl{background:#E7EFE6;color:#3C4A40;border:1px dashed #9DBBA2}"
+    +".surv{background:#E8A33D;color:#3A2A06}.mort{background:#B4321F;color:#fff}.mort .id{opacity:.9}"
+    +".vide{background:#F4F5F2;border:1px dotted #D3D8D1}"
+    +".bg{position:absolute;top:1px;right:2px;background:#fff;color:#B4321F;font-size:7pt;font-weight:700;border-radius:50%;width:12px;height:12px;line-height:12px;text-align:center}"
+    +".leg{display:flex;gap:16px;font-size:7.5pt;color:#3C4A40;margin:7px 0 10px}"
+    +".leg i{display:inline-block;width:11px;height:11px;border-radius:2px;vertical-align:-2px;margin-right:4px}"
+    +".two{display:grid;grid-template-columns:1.6fr 1fr;gap:16px;align-items:start}"
+    +"h2{font-size:10pt;margin:0 0 4px;padding-bottom:2px;border-bottom:1px solid #1A211C}h2 span{font-weight:400;color:#5B655F;font-size:8pt}"
+    +"table.t{border-collapse:collapse;width:100%;font-size:8pt}"
+    +".t th{text-align:left;font-size:7pt;color:#5B655F;text-transform:uppercase;letter-spacing:.3px;border-bottom:1px solid #C3CDC8;padding:2px 4px}"
+    +".t td{padding:3px 4px;border-bottom:1px solid #E4E8E3;vertical-align:top}"
+    +".t .n{font-weight:700;color:#B4321F;width:14px}.t .rep{font-weight:700;width:30px}.dt{color:#8A938D;font-size:7pt}"
+    +".box{width:30px;border:1px solid #9AA39C;border-radius:2px}"
+    +"ul{margin:0;padding-left:13px;font-size:7.8pt}li{margin-bottom:2px}"
+    +".none{font-size:8pt;color:#5B655F;font-style:italic}"
+    +"</style></head><body>"
+    +"<div class='hd'><div><h1>Plan des alertes — verger</h1>"
+    +"<div class='sub'>Pommiers et poiriers haute-tige · document de chantier, remplacement des arbres morts · situation au "+d+"</div></div>"
+    +"<div class='kpi'><div><div class='v'>"+rows.length+"</div><div class='k'>arbres</div></div>"
+    +"<div class='r'><div class='v'>"+morts.length+"</div><div class='k'>à remplacer</div></div>"
+    +"<div class='s'><div class='v'>"+surv.length+"</div><div class='k'>à surveiller</div></div></div></div>"
+    +map
+    +"<div class='leg'><span><i style='background:#B4321F'></i>Mort — à remplacer (repère chiffré)</span>"
+    +"<span><i style='background:#E8A33D'></i>À surveiller — pas d'abattage</span>"
+    +"<span><i style='background:#E7EFE6;border:1px dashed #9DBBA2'></i>Déjà remplacé (jeune plant, "+nbRepl+")</span>"
+    +"<span><i style='background:#E7EFE6'></i>Sain</span>"
+    +"<span><i style='background:#F4F5F2;border:1px dotted #D3D8D1'></i>Emplacement vide</span></div>"
+    +"<div class='two'><div><h2>À remplacer <span>— "+morts.length+" arbre"+(morts.length>1?"s":"")+", numéroté"+(morts.length>1?"s":"")+" sur le plan</span></h2>"
+    +(morts.length?("<table class='t'><tr><th></th><th>Repère</th><th>Variété à replanter</th><th>Espèce</th><th>Usage</th><th>Constat</th><th>Fait</th></tr>"+tab+"</table>")
+                  :"<div class='none'>Aucun arbre en statut Mort ou À remplacer.</div>")
+    +"</div><div><h2>À surveiller <span>— pour information, aucune intervention demandée</span></h2>"
+    +(surv.length?("<ul>"+liste+"</ul>"):"<div class='none'>Aucun arbre à surveiller.</div>")
+    +"</div></div>"
+    +"<scr"+"ipt>window.onload=function(){setTimeout(function(){window.print();},250);}</scr"+"ipt>"
+    +"</body></html>";
+  const w=window.open("","_blank");
+  if(!w){alert("Autorisez les fenêtres pop-up pour générer le PDF (ou utilisez Fichier ▸ Imprimer, puis « Enregistrer au format PDF »).");return;}
+  w.document.open();w.document.write(html);w.document.close();
+}
 function doExport(){
   const blob=new Blob([JSON.stringify(state,null,2)],{type:"application/json"});
   const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="verger-"+new Date().toISOString().slice(0,10)+".json";
@@ -625,6 +718,7 @@ function init(){
   document.getElementById("btnSettings").onclick=openSettings;
   document.getElementById("syncBadge").onclick=openSettings;
   document.getElementById("btnPDF").onclick=exportPDF;
+  document.getElementById("btnAlertes").onclick=exportPDFAlertes;
   document.getElementById("btnExport").onclick=doExport;
   document.getElementById("btnImport").onclick=()=>document.getElementById("fileInput").click();
   document.getElementById("fileInput").onchange=e=>{if(e.target.files[0])doImportFile(e.target.files[0]);e.target.value="";};
